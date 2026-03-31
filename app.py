@@ -133,12 +133,9 @@ def validate_api_key(api_key: str) -> bool:
     except Exception:
         return False
 
-
 def process_pdf(uploaded_file, chunk_size: int, chunk_overlap: int) -> tuple:
     from langchain_community.document_loaders import PyPDFLoader
-   from langchain_text_splitters import RecursiveCharacterTextSplitter
-    from langchain_community.embeddings import HuggingFaceEmbeddings
-    from langchain_community.vectorstores import Chroma
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
 
     # Save uploaded file to temp location
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
