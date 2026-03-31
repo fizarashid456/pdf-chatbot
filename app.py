@@ -136,7 +136,7 @@ def validate_api_key(api_key: str) -> bool:
 
 def process_pdf(uploaded_file, chunk_size: int, chunk_overlap: int) -> tuple:
     from langchain_community.document_loaders import PyPDFLoader
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
+   from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_community.embeddings import HuggingFaceEmbeddings
     from langchain_community.vectorstores import Chroma
 
