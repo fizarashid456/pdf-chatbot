@@ -2,19 +2,16 @@ import streamlit as st
 import os
 import tempfile
 import time
-from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# ── API key: Streamlit Cloud secrets → .env → empty ──────────────────────────
 def get_default_api_key() -> str:
     try:
         return st.secrets.get("GOOGLE_API_KEY", "")
     except Exception:
         return os.getenv("GOOGLE_API_KEY", "")
 
-# Page configuration
 st.set_page_config(
     page_title="PDF Chatbot - Powered by Gemini AI",
     page_icon="📄",
@@ -22,7 +19,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
 st.markdown("""
 <style>
     .main-header {
@@ -36,7 +32,6 @@ st.markdown("""
     }
     .main-header h1 { font-size: 2.2rem; margin: 0; font-weight: 700; }
     .main-header p { font-size: 1rem; opacity: 0.8; margin-top: 0.5rem; }
-
     .chat-message {
         padding: 1rem 1.2rem;
         border-radius: 12px;
@@ -74,18 +69,6 @@ st.markdown("""
     }
     .stats-card .number { font-size: 2rem; font-weight: 700; color: #4ecca3; }
     .stats-card .label { font-size: 0.8rem; opacity: 0.7; }
-
-    .example-chip {
-        display: inline-block;
-        background: #16213e;
-        color: #4ecca3;
-        border: 1px solid #4ecca3;
-        border-radius: 20px;
-        padding: 0.3rem 0.8rem;
-        margin: 0.2rem;
-        font-size: 0.82rem;
-        cursor: pointer;
-    }
     .upload-area {
         border: 2px dashed #4ecca3;
         border-radius: 12px;
@@ -102,10 +85,7 @@ st.markdown("""
         padding: 1rem;
         border-top: 1px solid #222;
     }
-    .stButton > button {
-        border-radius: 8px;
-        font-weight: 600;
-    }
+    .stButton > button { border-radius: 8px; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -133,22 +113,22 @@ def validate_api_key(api_key: str) -> bool:
     except Exception:
         return False
 
+
 def process_pdf(uploaded_file, chunk_size: int, chunk_overlap: int) -> tuple:
     from langchain_community.document_loaders import PyPDFLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+    from langchain_community.vectorstores import Chroma
 
-    # Save uploaded file to temp location
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(uploaded_file.getvalue())
         tmp_path = tmp_file.name
 
     try:
-        # Load PDF
         loader = PyPDFLoader(tmp_path)
         documents = loader.load()
         num_pages = len(documents)
 
-        # Split text
         splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
@@ -157,7 +137,6 @@ def process_pdf(uploaded_file, chunk_size: int, chunk_overlap: int) -> tuple:
         chunks = splitter.split_documents(documents)
         num_chunks = len(chunks)
 
-        # Create embeddings and vectorstore
         embeddings = HuggingFaceEmbeddings(
             model_name="all-MiniLM-L6-v2",
             model_kwargs={"device": "cpu"},
@@ -238,7 +217,6 @@ def ask_question(chain, question: str) -> dict:
 
 initialize_session_state()
 
-# Header
 st.markdown("""
 <div class="main-header">
     <h1>📄 PDF Chatbot</h1>
@@ -249,15 +227,13 @@ st.markdown("""
 # ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## ⚙️ Configuration")
-
-    # API Key
     st.markdown("### 🔑 Google API Key")
     api_key_input = st.text_input(
         "Enter your Gemini API key",
         type="password",
         value=get_default_api_key(),
         placeholder="AIza...",
-        help="Get your free key at https://makersuite.google.com/app/apikey"
+        help="Get your free key at https://aistudio.google.com/app/apikey"
     )
 
     if api_key_input:
@@ -270,34 +246,25 @@ with st.sidebar:
                     st.session_state.api_key_valid = False
                     st.error("Invalid API key. Please check and try again.")
     else:
-        st.info("👆 Enter your Google API key to get started.\n\n[Get a free key →](https://makersuite.google.com/app/apikey)")
+        st.info("👆 Enter your Google API key to get started.\n\n[Get a free key →](https://aistudio.google.com/app/apikey)")
 
     st.divider()
 
-    # Model settings
     st.markdown("### 🧠 Model Settings")
-    temperature = st.slider(
-        "Temperature",
-        min_value=0.0, max_value=1.0, value=0.3, step=0.05,
-        help="Lower = more precise, Higher = more creative"
-    )
-    num_sources = st.slider(
-        "Sources to retrieve",
-        min_value=1, max_value=8, value=4,
-        help="Number of document chunks to use as context"
-    )
+    temperature = st.slider("Temperature", 0.0, 1.0, 0.3, 0.05,
+        help="Lower = more precise, Higher = more creative")
+    num_sources = st.slider("Sources to retrieve", 1, 8, 4,
+        help="Number of document chunks to use as context")
     show_sources = st.toggle("Show source references", value=False)
 
     st.divider()
 
-    # Chunking settings
     st.markdown("### 📐 Text Chunking")
     chunk_size = st.slider("Chunk size", 200, 2000, 800, 100)
     chunk_overlap = st.slider("Chunk overlap", 0, 400, 100, 50)
 
     st.divider()
 
-    # Document stats
     if st.session_state.pdf_processed and st.session_state.doc_stats:
         stats = st.session_state.doc_stats
         st.markdown("### 📊 Document Stats")
@@ -315,7 +282,6 @@ with st.sidebar:
         st.markdown(f"**📄 File:** {stats.get('filename', 'N/A')}")
         st.divider()
 
-    # Action buttons
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🗑️ Clear Chat", use_container_width=True):
@@ -324,30 +290,21 @@ with st.sidebar:
     with col2:
         if st.button("🔄 Reset All", use_container_width=True):
             for key in ["chat_history", "vectorstore", "pdf_processed", "doc_stats"]:
-                st.session_state[key] = [] if key == "chat_history" else (None if key == "vectorstore" else False if key == "pdf_processed" else {})
+                st.session_state[key] = [] if key == "chat_history" else (
+                    None if key == "vectorstore" else False if key == "pdf_processed" else {})
             st.rerun()
 
 # ─── MAIN CONTENT ─────────────────────────────────────────────────────────────
 col_main, col_right = st.columns([3, 1])
 
 with col_main:
-    # API key warning
     if not api_key_input:
         st.warning("⚠️ Please enter your Google Gemini API key in the sidebar to get started.")
-        st.markdown("""
-        **How to get a free API key:**
-        1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-        2. Sign in with your Google account
-        3. Click **Create API Key**
-        4. Copy and paste it in the sidebar
-        """)
         st.stop()
 
-    # PDF Upload
     st.markdown("### 📂 Upload Your PDF")
     uploaded_file = st.file_uploader(
-        "Choose a PDF file",
-        type=["pdf"],
+        "Choose a PDF file", type=["pdf"],
         help="Upload any PDF document to start chatting",
         label_visibility="collapsed"
     )
@@ -359,17 +316,14 @@ with col_main:
             with st.spinner("🔍 Loading and processing your PDF..."):
                 progress = st.progress(0)
                 status = st.empty()
-
                 status.text("📖 Loading PDF pages...")
                 progress.progress(20)
-
                 status.text("✂️ Splitting into chunks...")
                 progress.progress(40)
 
                 try:
                     vectorstore, num_pages, num_chunks = process_pdf(
-                        uploaded_file, chunk_size, chunk_overlap
-                    )
+                        uploaded_file, chunk_size, chunk_overlap)
                     progress.progress(80)
                     status.text("🧠 Building vector index...")
 
@@ -381,12 +335,10 @@ with col_main:
                         "filename": uploaded_file.name,
                     }
                     st.session_state.chat_history = []
-
                     progress.progress(100)
                     status.empty()
                     progress.empty()
-
-                    st.success(f"✅ PDF processed successfully! **{num_pages} pages** split into **{num_chunks} chunks**.")
+                    st.success(f"✅ PDF processed! **{num_pages} pages**, **{num_chunks} chunks**.")
                     time.sleep(1)
                     st.rerun()
 
@@ -394,80 +346,54 @@ with col_main:
                     progress.empty()
                     status.empty()
                     st.error(f"❌ Error processing PDF: {str(e)}")
-                    st.info("Make sure the PDF is not password-protected and is readable.")
 
     elif uploaded_file and st.session_state.pdf_processed:
-        st.success(f"✅ **{st.session_state.doc_stats.get('filename')}** is ready — ask me anything!")
+        st.success(f"✅ **{st.session_state.doc_stats.get('filename')}** is ready!")
 
-    # ─── CHAT INTERFACE ───────────────────────────────────────────────────────
     if st.session_state.pdf_processed:
         st.divider()
         st.markdown("### 💬 Chat with Your PDF")
 
-        # Example questions
-        st.markdown("**💡 Example questions:**")
-        examples = [
-            "Summarize this document",
-            "What are the main topics?",
-            "List the key findings",
-            "What conclusions are drawn?",
-            "Who are the main people mentioned?",
-        ]
+        examples = ["Summarize this document", "What are the main topics?",
+                    "List the key findings", "What conclusions are drawn?"]
         chips_html = "".join(
-            f'<span class="example-chip" onclick="void(0)">{q}</span>' for q in examples
-        )
+            f'<span style="display:inline-block;background:#16213e;color:#4ecca3;border:1px solid #4ecca3;border-radius:20px;padding:0.3rem 0.8rem;margin:0.2rem;font-size:0.82rem">{q}</span>'
+            for q in examples)
         st.markdown(f'<div>{chips_html}</div>', unsafe_allow_html=True)
-        st.caption("Click an example above or type your own question below ↓")
+        st.caption("Type your question below ↓")
 
-        # Chat history display
         if st.session_state.chat_history:
             st.markdown("---")
             for msg in st.session_state.chat_history:
                 if msg["role"] == "user":
-                    st.markdown(f"""
-                    <div class="chat-message user-message">
-                        <b>🧑 You:</b><br>{msg["content"]}
-                    </div>""", unsafe_allow_html=True)
+                    st.markdown(f"""<div class="chat-message user-message">
+                        <b>🧑 You:</b><br>{msg["content"]}</div>""", unsafe_allow_html=True)
                 else:
-                    st.markdown(f"""
-                    <div class="chat-message assistant-message">
-                        <b>🤖 Assistant:</b><br>{msg["content"]}
-                    </div>""", unsafe_allow_html=True)
-
+                    st.markdown(f"""<div class="chat-message assistant-message">
+                        <b>🤖 Assistant:</b><br>{msg["content"]}</div>""", unsafe_allow_html=True)
                     if show_sources and msg.get("sources"):
                         with st.expander(f"📚 Sources ({len(msg['sources'])} chunks)"):
                             for i, src in enumerate(msg["sources"]):
                                 page = src.metadata.get("page", "?")
                                 preview = src.page_content[:300].replace("\n", " ")
-                                st.markdown(f"""
-                                <div class="source-box">
-                                    <b>Source {i+1} — Page {page + 1 if isinstance(page, int) else page}</b><br>
-                                    <i>{preview}...</i>
+                                st.markdown(f"""<div class="source-box">
+                                    <b>Source {i+1} — Page {page}</b><br><i>{preview}...</i>
                                 </div>""", unsafe_allow_html=True)
 
-        # Chat input
         with st.form("chat_form", clear_on_submit=True):
             col_input, col_btn = st.columns([5, 1])
             with col_input:
-                user_question = st.text_input(
-                    "Ask a question",
+                user_question = st.text_input("Ask a question",
                     placeholder="e.g., What is the main argument of this document?",
-                    label_visibility="collapsed"
-                )
+                    label_visibility="collapsed")
             with col_btn:
                 submitted = st.form_submit_button("Send 📨", use_container_width=True, type="primary")
 
         if submitted and user_question.strip():
             st.session_state.chat_history.append({"role": "user", "content": user_question})
-
             with st.spinner("🤔 Thinking..."):
                 try:
-                    chain = get_qa_chain(
-                        st.session_state.vectorstore,
-                        api_key_input,
-                        temperature,
-                        num_sources,
-                    )
+                    chain = get_qa_chain(st.session_state.vectorstore, api_key_input, temperature, num_sources)
                     response = ask_question(chain, user_question)
                     st.session_state.chat_history.append({
                         "role": "assistant",
@@ -477,18 +403,16 @@ with col_main:
                 except Exception as e:
                     st.session_state.chat_history.append({
                         "role": "assistant",
-                        "content": f"Sorry, I encountered an error: {str(e)}",
+                        "content": f"Sorry, error: {str(e)}",
                         "sources": [],
                     })
             st.rerun()
 
     elif not uploaded_file:
-        st.markdown("""
-        <div class="upload-area">
+        st.markdown("""<div class="upload-area">
             <h3>👆 Upload a PDF to get started</h3>
             <p>Supports research papers, books, reports, manuals, and more.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        </div>""", unsafe_allow_html=True)
 
 with col_right:
     st.markdown("### 📌 Tips")
@@ -500,10 +424,7 @@ with col_right:
         num_q = sum(1 for m in st.session_state.chat_history if m["role"] == "user")
         st.metric("Questions asked", num_q)
 
-# Footer
-st.markdown("""
-<div class="footer">
+st.markdown("""<div class="footer">
     Built with ❤️ using Streamlit · LangChain · Google Gemini AI · HuggingFace Embeddings<br>
-    <a href="https://makersuite.google.com/app/apikey" target="_blank">Get your free Gemini API key</a>
-</div>
-""", unsafe_allow_html=True)
+    <a href="https://aistudio.google.com/app/apikey" target="_blank">Get your free Gemini API key</a>
+</div>""", unsafe_allow_html=True)
