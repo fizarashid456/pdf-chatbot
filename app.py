@@ -127,8 +127,8 @@ def validate_api_key(api_key: str) -> bool:
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        model.generate_content("Hi")
+        models = genai.list_models()
+        list(models)
         return True
     except Exception:
         return False
