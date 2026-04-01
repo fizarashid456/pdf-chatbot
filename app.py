@@ -23,68 +23,20 @@ st.markdown("""
 <style>
     .main-header {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-        padding: 2rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-        text-align: center;
-        color: white;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem;
+        text-align: center; color: white; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
     .main-header h1 { font-size: 2.2rem; margin: 0; font-weight: 700; }
     .main-header p { font-size: 1rem; opacity: 0.8; margin-top: 0.5rem; }
-    .chat-message {
-        padding: 1rem 1.2rem;
-        border-radius: 12px;
-        margin-bottom: 0.8rem;
-        line-height: 1.6;
-    }
-    .user-message {
-        background: linear-gradient(135deg, #0f3460, #16213e);
-        color: white;
-        margin-left: 2rem;
-        border-left: 4px solid #e94560;
-    }
-    .assistant-message {
-        background: #1e1e2e;
-        color: #e0e0e0;
-        margin-right: 2rem;
-        border-left: 4px solid #4ecca3;
-    }
-    .source-box {
-        background: #0d0d1a;
-        border: 1px solid #333;
-        border-radius: 8px;
-        padding: 0.8rem;
-        margin-top: 0.5rem;
-        font-size: 0.85rem;
-        color: #aaa;
-    }
-    .stats-card {
-        background: linear-gradient(135deg, #1e1e2e, #16213e);
-        border: 1px solid #4ecca3;
-        border-radius: 10px;
-        padding: 1rem;
-        text-align: center;
-        color: white;
-    }
+    .chat-message { padding: 1rem 1.2rem; border-radius: 12px; margin-bottom: 0.8rem; line-height: 1.6; }
+    .user-message { background: linear-gradient(135deg, #0f3460, #16213e); color: white; margin-left: 2rem; border-left: 4px solid #e94560; }
+    .assistant-message { background: #1e1e2e; color: #e0e0e0; margin-right: 2rem; border-left: 4px solid #4ecca3; }
+    .source-box { background: #0d0d1a; border: 1px solid #333; border-radius: 8px; padding: 0.8rem; margin-top: 0.5rem; font-size: 0.85rem; color: #aaa; }
+    .stats-card { background: linear-gradient(135deg, #1e1e2e, #16213e); border: 1px solid #4ecca3; border-radius: 10px; padding: 1rem; text-align: center; color: white; }
     .stats-card .number { font-size: 2rem; font-weight: 700; color: #4ecca3; }
     .stats-card .label { font-size: 0.8rem; opacity: 0.7; }
-    .upload-area {
-        border: 2px dashed #4ecca3;
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: center;
-        background: #0d0d1a;
-        color: #aaa;
-    }
-    .footer {
-        text-align: center;
-        color: #555;
-        font-size: 0.8rem;
-        margin-top: 3rem;
-        padding: 1rem;
-        border-top: 1px solid #222;
-    }
+    .upload-area { border: 2px dashed #4ecca3; border-radius: 12px; padding: 1.5rem; text-align: center; background: #0d0d1a; color: #aaa; }
+    .footer { text-align: center; color: #555; font-size: 0.8rem; margin-top: 3rem; padding: 1rem; border-top: 1px solid #222; }
     .stButton > button { border-radius: 8px; font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
@@ -157,8 +109,8 @@ def process_pdf(uploaded_file, chunk_size: int, chunk_overlap: int) -> tuple:
 
 def get_qa_chain(vectorstore, api_key: str, temperature: float, num_sources: int):
     from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.prompts import PromptTemplate
     from langchain.chains import RetrievalQA
-    from langchain.prompts import PromptTemplate
 
     os.environ["GOOGLE_API_KEY"] = api_key
 
@@ -169,7 +121,7 @@ def get_qa_chain(vectorstore, api_key: str, temperature: float, num_sources: int
     )
 
     prompt_template = """You are a helpful AI assistant analyzing a PDF document.
-Use ONLY the context below to answer the question. If the answer isn't in the context,
+Use ONLY the context below to answer the question. If the answer is not in the context,
 say "I couldn't find this information in the document."
 
 Context:
@@ -213,8 +165,6 @@ def ask_question(chain, question: str) -> dict:
         return {"answer": f"Error generating response: {str(e)}", "sources": []}
 
 
-# ─── MAIN APP ────────────────────────────────────────────────────────────────
-
 initialize_session_state()
 
 st.markdown("""
@@ -224,7 +174,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ─── SIDEBAR ─────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## ⚙️ Configuration")
     st.markdown("### 🔑 Google API Key")
@@ -249,7 +198,6 @@ with st.sidebar:
         st.info("👆 Enter your Google API key to get started.\n\n[Get a free key →](https://aistudio.google.com/app/apikey)")
 
     st.divider()
-
     st.markdown("### 🧠 Model Settings")
     temperature = st.slider("Temperature", 0.0, 1.0, 0.3, 0.05,
         help="Lower = more precise, Higher = more creative")
@@ -258,7 +206,6 @@ with st.sidebar:
     show_sources = st.toggle("Show source references", value=False)
 
     st.divider()
-
     st.markdown("### 📐 Text Chunking")
     chunk_size = st.slider("Chunk size", 200, 2000, 800, 100)
     chunk_overlap = st.slider("Chunk overlap", 0, 400, 100, 50)
@@ -294,7 +241,6 @@ with st.sidebar:
                     None if key == "vectorstore" else False if key == "pdf_processed" else {})
             st.rerun()
 
-# ─── MAIN CONTENT ─────────────────────────────────────────────────────────────
 col_main, col_right = st.columns([3, 1])
 
 with col_main:
@@ -326,7 +272,6 @@ with col_main:
                         uploaded_file, chunk_size, chunk_overlap)
                     progress.progress(80)
                     status.text("🧠 Building vector index...")
-
                     st.session_state.vectorstore = vectorstore
                     st.session_state.pdf_processed = True
                     st.session_state.doc_stats = {
